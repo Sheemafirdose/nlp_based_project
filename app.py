@@ -4,93 +4,105 @@ from PIL import Image
 
 st.set_page_config(page_title="Sentiment Analyzer", page_icon="🎭", layout="centered")
 
-page_bg_img = '''
-<style>
+# JavaScript to detect dark mode and update theme locally
+st.markdown("""
+    <script>
+        const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (isDarkMode) {
+            window.localStorage.setItem('theme', 'dark');
+        } else {
+            window.localStorage.setItem('theme', 'light');
+        }
+    </script>
+""", unsafe_allow_html=True)
 
-.stButton>button {
+# Retrieve the theme from localStorage (defaults to light mode)
+query_params = st.query_params
+is_dark_mode = query_params.get('theme', ['light'])[0] == 'dark'
+
+# Set the text color based on the theme
+text_color = "lightgray"  # Neutral light gray that works well in both themes
+
+page_bg_img = f'''
+<style>
+.stButton>button {{
     display: block;
     margin: 0 auto;
-    border: 2px solid white;  
+    border: 2px solid {text_color};  
     border-radius: 10px;
     background-color: transparent;
     padding: 10px 20px;
-    color: white;
+    color: {text_color};
     font-size: 16px;
-    box-shadow: 0 0 6px 1px white; 
+    box-shadow: 0 0 6px 1px {text_color}; 
     transition: box-shadow 0.3s ease-in-out, border-color 0.3s ease-in-out; 
-}
+}}
 
-.stButton>button:hover {
-    box-shadow: 0 0 10px 3px white; 
+.stButton>button:hover {{
+    box-shadow: 0 0 10px 3px {text_color}; 
     border-color: skyblue; 
-}
+}}
 
-
-.stTextArea textarea {
-    border: 2px solid white;  
+.stTextArea textarea {{
+    border: 2px solid {text_color};  
     border-radius: 10px;
     padding: 10px;
-    box-shadow: 0 0 6px 1px white; 
+    box-shadow: 0 0 6px 1px {text_color}; 
     transition: box-shadow 0.3s ease-in-out; 
     background-color: transparent;
-    color: white;  
-}
+    color: {text_color};  
+}}
 
-.stTextArea textarea:focus {
+.stTextArea textarea:focus {{
     border-color: skyblue;  
     box-shadow: 0 0 10px 3px skyblue;  
-    color: white;  
-}
+    color: {text_color};  
+}}
 
-
-.stTextArea textarea:hover {
+.stTextArea textarea:hover {{
     border-color: skyblue; 
     box-shadow: 0 0 10px 3px skyblue; 
-    color: white;  
-}
+    color: {text_color};  
+}}
 
-.stTextInput input {
-    border: 2px solid white;
+.stTextInput input {{
+    border: 2px solid {text_color};
     border-radius: 10px;
     padding: 10px;
-    box-shadow: 0 0 6px 1px white; 
+    box-shadow: 0 0 6px 1px {text_color}; 
     transition: box-shadow 0.3s ease-in-out; 
     background-color: transparent;
-    color: white;  
-}
+    color: {text_color};  
+}}
 
-.stTextInput input:focus {
+.stTextInput input:focus {{
     border-color: skyblue;  
     box-shadow: 0 0 10px 3px skyblue;  
-    color: white;  
-}
-.stTextInput input:hover {
+    color: {text_color};  
+}}
+
+.stTextInput input:hover {{
     border-color: skyblue; 
     box-shadow: 0 0 10px 3px skyblue; 
-    color: white;  
-}
+    color: {text_color};  
+}}
 
-
-.stExpander {
-    border: 2px solid white; 
+.stExpander {{
+    border: 2px solid {text_color}; 
     border-radius: 10px;
     padding: 10px;
-    box-shadow: 0 0 3px 1px white; 
+    box-shadow: 0 0 3px 1px {text_color}; 
     transition: box-shadow 0.3s ease-in-out; 
-    color: white; 
-}
+    color: {text_color}; 
+}}
 
 .stExpander:hover,
-.stExpander:focus-within {
-    box-shadow: 0 0 4px 2px white; 
+.stExpander:focus-within {{
+    box-shadow: 0 0 4px 2px {text_color}; 
     color: skyblue;  
-}
+}}
 
-.stExpander .stMarkdown,
-.stExpander .stWrite {
-    color: white; 
-}
-</style>
+.stExpander .stMarkdown
 '''
 
 st.markdown(page_bg_img, unsafe_allow_html=True)
@@ -126,20 +138,15 @@ if st.button("Assess Feedback"):
             suggestion = "It might help to highlight strengths more clearly."
         else:
             sentiment = "Neutral 😐"
-            color = "gray"
+            color = "lightsteelblue"  # Neutral color for both modes
             suggestion = "Try adding more details or enthusiasm to your introduction."
 
-        st.session_state.history.append({
-            'text': text,
-            'sentiment': sentiment,
-            'scaled_score': round(scaled_score, 2),
-            'suggestion': suggestion,
-            'color': color
-        })
+        st.session_state.history = [{'text': text, 'sentiment': sentiment, 'scaled_score': round(scaled_score, 2), 'suggestion': suggestion, 'color': color}]
         
     else:
         st.warning("⚠️ Please enter some text before analyzing.")
 
+# Display the results dynamically
 for entry in st.session_state.history:
     st.markdown(f"<h3 style='color:{entry['color']};'>{entry['sentiment']}</h3>", unsafe_allow_html=True)
     st.write(f"**Text Entered:** {entry['text']}")
