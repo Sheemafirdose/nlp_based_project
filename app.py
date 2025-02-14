@@ -1,121 +1,102 @@
 import streamlit as st
 from textblob import TextBlob
 from PIL import Image
+import fitz  # PyMuPDF for PDF text extraction
+import docx
+import re
+from sentence_transformers import SentenceTransformer
+from sklearn.metrics.pairwise import cosine_similarity
 
 st.set_page_config(page_title="Sentiment Analyzer", page_icon="🎭", layout="centered")
 
-# JavaScript to detect dark mode and update theme locally
-st.markdown("""
-    <script>
-        const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        if (isDarkMode) {
-            window.localStorage.setItem('theme', 'dark');
-        } else {
-            window.localStorage.setItem('theme', 'light');
-        }
-    </script>
-""", unsafe_allow_html=True)
-
-# Retrieve the theme from localStorage (defaults to light mode)
-query_params = st.query_params
-is_dark_mode = query_params.get('theme', ['light'])[0] == 'dark'
-
-# Set the text color based on the theme
-text_color = "lightgray"  # Neutral light gray that works well in both themes
-
-page_bg_img = f'''
-<style>
-.stButton>button {{
-    display: block;
-    margin: 0 auto;
-    border: 2px solid {text_color};  
-    border-radius: 10px;
-    background-color: transparent;
-    padding: 10px 20px;
-    color: {text_color};
-    font-size: 16px;
-    box-shadow: 0 0 6px 1px {text_color}; 
-    transition: box-shadow 0.3s ease-in-out, border-color 0.3s ease-in-out; 
-}}
-
-.stButton>button:hover {{
-    box-shadow: 0 0 10px 3px {text_color}; 
-    border-color: skyblue; 
-}}
-
-.stTextArea textarea {{
-    border: 2px solid {text_color};  
-    border-radius: 10px;
-    padding: 10px;
-    box-shadow: 0 0 6px 1px {text_color}; 
-    transition: box-shadow 0.3s ease-in-out; 
-    background-color: transparent;
-    color: {text_color};  
-}}
-
-.stTextArea textarea:focus {{
-    border-color: skyblue;  
-    box-shadow: 0 0 10px 3px skyblue;  
-    color: {text_color};  
-}}
-
-.stTextArea textarea:hover {{
-    border-color: skyblue; 
-    box-shadow: 0 0 10px 3px skyblue; 
-    color: {text_color};  
-}}
-
-.stTextInput input {{
-    border: 2px solid {text_color};
-    border-radius: 10px;
-    padding: 10px;
-    box-shadow: 0 0 6px 1px {text_color}; 
-    transition: box-shadow 0.3s ease-in-out; 
-    background-color: transparent;
-    color: {text_color};  
-}}
-
-.stTextInput input:focus {{
-    border-color: skyblue;  
-    box-shadow: 0 0 10px 3px skyblue;  
-    color: {text_color};  
-}}
-
-.stTextInput input:hover {{
-    border-color: skyblue; 
-    box-shadow: 0 0 10px 3px skyblue; 
-    color: {text_color};  
-}}
-
-.stExpander {{
-    border: 2px solid {text_color}; 
-    border-radius: 10px;
-    padding: 10px;
-    box-shadow: 0 0 3px 1px {text_color}; 
-    transition: box-shadow 0.3s ease-in-out; 
-    color: {text_color}; 
-}}
-
-.stExpander:hover,
-.stExpander:focus-within {{
-    box-shadow: 0 0 4px 2px {text_color}; 
-    color: skyblue;  
-}}
-
-.stExpander .stMarkdown
-'''
-
-st.markdown(page_bg_img, unsafe_allow_html=True)
-
-st.markdown("<h1 style='text-align:center; color:white;'>🔍 Sentiment Analysis App</h1>", unsafe_allow_html=True)
-
+# Initialize session state
 if 'history' not in st.session_state:
     st.session_state.history = []
+
+# Load NLP model for embedding comparisons
+model = SentenceTransformer("paraphrase-MiniLM-L6-v2")
+
+# Function to extract text from PDF
+def extract_text_from_pdf(file):
+    doc = fitz.open(stream=file.read())
+    text = "\n".join([page.get_text() for page in doc])
+    return text
+
+# Function to extract text from DOCX
+def extract_text_from_docx(file):
+    doc = docx.Document(file)
+    text = "\n".join([para.text for para in doc.paragraphs])
+    return text
+
+# Function to compare resume and self-introduction
+def compare_texts(resume_text, self_intro):
+    resume_embedding = model.encode([resume_text])[0]
+    intro_embedding = model.encode([self_intro])[0]
+    similarity = cosine_similarity([resume_embedding], [intro_embedding])[0][0]
+    return similarity
+
+def extract_resume_summary(resume_text, user_input):
+    """Extracts a structured summary from resume text and complements it with user input."""
+    # Extract name (assumes name is in the first 100 characters)
+    name_match = re.search(r"([A-Z][a-z]+(?:\s[A-Z][a-z]+)*)", resume_text[:100])
+    name = name_match.group(0) if name_match else "[Your Name]"
+    
+    # Keep year as a placeholder
+    year = "[Year]"
+    
+    # Extract branch
+    branch_match = re.search(r"(?:Bachelor|B\.?Tech|B\.?E\.?) in ([A-Za-z&/\s]+)", resume_text, re.IGNORECASE)
+    branch = branch_match.group(1).strip() if branch_match else "[Your Branch]"
+    
+    # Extract skills dynamically
+    skills_section_match = re.search(r"(?:Skills|Technical Skills|Key Skills|Expertise)[:\n](.*?)(?=\n\n|Experience|Projects|Education|$)", resume_text, re.DOTALL | re.IGNORECASE)
+    found_skills = skills_section_match.group(1).strip().split(', ') if skills_section_match else []
+    found_skills = [skill.strip() for skill in found_skills if skill.strip()]
+    
+    # Extract projects dynamically
+    project_match = re.findall(r"(?:Project:|Worked on|Research on) ([\w\s]+)", resume_text)
+    projects = ", ".join(set(project_match)) if project_match else "various projects"
+    
+    # Create an enhanced self-introduction
+    intro = (
+        f"Hello! My name is {name}, and I am a {year} student specializing in {branch}. "
+        f"I have hands-on experience in projects where I applied my knowledge of {', '.join(found_skills) if found_skills else '[Skills not mentioned]'}. "
+        f"My projects include {projects}, and I continuously work on improving my skills in the field."
+    )
+    
+    return intro
+
+# UI Components
+st.markdown("<h1 style='text-align:center; color:white;'>🔍 Sentiment Analysis & Resume Check</h1>", unsafe_allow_html=True)
+
+resume_file = st.file_uploader("📂 Upload your Resume (PDF or DOCX)", type=["pdf", "docx"])
 
 st.subheader("Enter your self-introduction or skills:")
 text = st.text_area("Type or paste your details here...", height=200)
 
 if st.button("Assess Feedback"):
+    if resume_file:
+        # Extract text from the uploaded resume
+        if resume_file.name.endswith(".pdf"):
+            resume_text = extract_text_from_pdf(resume_file)
+        else:
+            resume_text = extract_text_from_docx(resume_file)
+        
+        # Generate Suggested Self-Intro (Improved)
+        suggested_intro = extract_resume_summary(resume_text, text)
+    elif text.strip():
+        # If no resume uploaded, use user input as fallback
+        suggested_intro = text.strip()
+    else:
+        st.warning("⚠️ Please enter some text or upload a resume before analyzing.")
+        suggested_intro = ""
+    
+    if suggested_intro:
+        # Store results
+        st.session_state.history.append(
+            {'text': suggested_intro, 'sentiment': "Suggested Self-Introduction ✨", 'scaled_score': "-", 'suggestion': "This introduction better reflects your resume.", 'color': "skyblue"}
+        )
+    
     if text.strip():
         sentiment_score = TextBlob(text).sentiment.polarity
         scaled_score = 30 + ((sentiment_score + 1) / 2) * 68
@@ -138,22 +119,21 @@ if st.button("Assess Feedback"):
             suggestion = "It might help to highlight strengths more clearly."
         else:
             sentiment = "Neutral 😐"
-            color = "lightsteelblue"  # Neutral color for both modes
+            color = "lightsteelblue"
             suggestion = "Try adding more details or enthusiasm to your introduction."
 
-        st.session_state.history = [{'text': text, 'sentiment': sentiment, 'scaled_score': round(scaled_score, 2), 'suggestion': suggestion, 'color': color}]
-        
+        st.session_state.history.append({'text': text, 'sentiment': sentiment, 'scaled_score': round(scaled_score, 2), 'suggestion': suggestion, 'color': color})
+    
     else:
         st.warning("⚠️ Please enter some text before analyzing.")
 
-# Display the results dynamically
+# Display Results
 for entry in st.session_state.history:
     st.markdown(f"<h3 style='color:{entry['color']};'>{entry['sentiment']}</h3>", unsafe_allow_html=True)
     st.write(f"**Text Entered:** {entry['text']}")
-    st.write(f"**Confidence Score:** `{entry['scaled_score']}%`")
+    st.write(f"**Confidence Score:** {entry['scaled_score']}%")
     st.write(f"**Suggestion:** {entry['suggestion']}")
     st.markdown("<hr>", unsafe_allow_html=True)
-
 st.subheader("Need help with your introduction or skills?")
 
 with st.expander("How to say a proper intro?"):
@@ -164,19 +144,23 @@ with st.expander("How to say a proper intro?"):
 with st.expander("What skills should you build?"):
     st.write("Here are some key skills to build depending on your career goals:")
     st.write("- **For AI/ML**: Python, TensorFlow, Data Science, Machine Learning Algorithms, Deep Learning")
+    st.write("- **For Data Science**: Python, R, SQL, Statistics, Data Visualization, Machine Learning")
     st.write("- **For Web Development**: HTML, CSS, JavaScript, React, Node.js")
+    st.write("- **For Cloud Computing**: AWS, Azure, Google Cloud, Docker, Kubernetes")
+    st.write("- **For Cybersecurity**: Network Security, Ethical Hacking, Cryptography, Risk Management")
     st.write("- **For Mobile Development**: Java, Swift, Android Studio, Flutter")
     st.write("- **For Soft Skills**: Communication, Teamwork, Problem-Solving, Critical Thinking")
     st.write("Search for more specific skills related to your interests and role!")
+    st.markdown("[Search for more on YouTube](https://www.youtube.com/)  \n[Explore on ChatGPT](https://chat.openai.com/)  \n[Check Tutorials on GeeksforGeeks](https://www.geeksforgeeks.org/)")
 
-with st.expander("Suggested Videos for Self-Introduction and Career Roadmap"):
-    st.write("Check out these videos to improve your introduction and career planning:")
+with st.expander("Suggested Videos for Career Growth and Motivation"):
+    st.write("Check out these videos to inspire your career journey and decision-making:")
     
     st.markdown(""" 
-    - **[How to Craft the Perfect Self-Introduction | Personal Branding](https://youtu.be/ozMCb0wOnMU?si=k0PfsWeQ_hoq7mfQ)**
-    - **[AI & ML Career Roadmap | Path to becoming an AI Engineer](https://www.youtube.com/watch?v=J_YLjCTOFWE&pp=ygU4QUkgJiBNTCBDYXJlZXIgUm9hZG1hcCB8IFBhdGggdG8gYmVjb21pbmcgYW4gQUkgRW5naW5lZXI%3D)**
-    - **[Top Skills to Build for a Career in Tech | Key Skills for 2025](https://www.youtube.com/watch?v=zUFb9UAKgjw&pp=ygVSXVRvcCBTa2lsbHMgdG8gQnVpbGQgZm9yIGEgQ2FyZWVyIGluIFRlY2ggfCBLZXkgU2tpbGxzIGZvciAyMDI1IGJ5IGNvZGUgd2l0aCBoYXJyeQ%3D%3D)**
+    - **[How to Choose the Right Career Path | Best Advice](https://youtu.be/h-NjW4Wupzs?si=efERJ69321495G1S)**
+    - **[The Psychology of Success | Stay Motivated and Focused](https://youtu.be/8ZhoeSaPF-k?si=Dq2ep-e4T43tQ2C5)**
+    - **[Time Management & Productivity Hacks for Students](https://youtu.be/JmOBM160jZ0?si=lNUBI5xk0I99U9rw)**
     """)
-    
+
     st.write("Want to explore more videos?")
-    st.markdown("[Search for more on YouTube](https://www.youtube.com/results?search_query=career+roadmap+AI+ML+introduction+skills+development)")
+    st.markdown("[Search for more on YouTube](https://www.youtube.com/results?search_query=career+motivation+success+tips)  \n[Google Chrome Search](https://www.google.com/)") 

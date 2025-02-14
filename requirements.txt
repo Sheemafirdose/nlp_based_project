@@ -1,3 +1,9 @@
 streamlit
 textblob
-pillow
+Pillow
+PyMuPDF
+python-docx
+numpy
+torch
+sentence-transformers
+scikit-learn
