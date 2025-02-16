@@ -7,3 +7,5 @@ numpy
 torch
 sentence-transformers
 scikit-learn
+spacy
+ollama

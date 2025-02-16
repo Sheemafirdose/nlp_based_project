@@ -1,40 +1,41 @@
-# nlp_based_project
+AI-Driven Self-Intro Enhancement Web App<br>
 
-Sentiment Analysis Web App built using Streamlit, TextBlob, and Pillow. The app allows users to input self-introductions or skills, analyzes the sentiment of the text, and provides personalized feedback with suggestions based on the sentiment. It's a great tool for enhancing your self-presentation and career planning.
+This web app helps you enhance your self-introduction by analyzing sentiment and comparing it with your uploaded resume to provide personalized feedback and suggestions. The app uses advanced NLP techniques to assess and refine your self-presentation, making it a valuable tool for career planning and personal growth.
+<br>
+Features:
+<br>
+Upload Resume: Upload your PDF or DOCX resume for comparison with your self-introduction.<br>
+Self-Introduction Analysis: Enter your self-introduction or skills to analyze sentiment and receive feedback.<br>
+Sentiment Classification: Classifies the text as positive, negative, neutral, or strongly positive/negative.<br>
+Personalized Suggestions: Provides suggestions to improve your self-introduction based on sentiment and resume comparison.<br>
+Interactive Interface: Features smooth transitions, hover effects, and a user-friendly interface.<br>
+Career Development Suggestions: Suggested career and skills development videos for further learning.<br>
+Technologies Used:<br>
 
-## Sentiment Analysis Web App
-
-This project is a Sentiment Analysis Web App built using Streamlit and TextBlob. It allows users to enter their self-introductions or skills, analyzes the sentiment of the input text, and provides personalized feedback based on the sentiment polarity.
-
-## Features:
-- Input your self-introduction or skills.
-- Sentiment analysis to classify the text as positive, negative, neutral, or strongly positive/negative.
-- Personalized suggestions based on sentiment.
-- Interactive interface with smooth transitions and hover effects.
-- Suggested career and skills development videos.
-
-## Technologies Used:
-- **Streamlit**: A framework for creating the web app.
-- **TextBlob**: A Python library for natural language processing and sentiment analysis.
-- **Pillow**: A library for image manipulation (for custom background images).
-- **PyMuPDF**: A library for PDF text extraction.
-- **python-docx**: A library for DOCX text extraction.
-- **Sentence Transformers**: A library for embedding comparisons.
-- **scikit-learn**: A library for machine learning algorithms.
-
-## Installation:
+Streamlit: A framework for creating the web app.<br>
+TextBlob: A Python library for sentiment analysis.<br>
+Pillow: A library for image manipulation (for custom background images).<br>
+PyMuPDF: For PDF text extraction.<br>
+python-docx: For DOCX text extraction.<br>
+Sentence Transformers: For embedding comparisons.<br>
+scikit-learn: For machine learning algorithms.<br>
+Pandas: For data handling and manipulation.<br>
+Installation:<br>
 To run the app locally:
-
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/Sheemafirdose/nlp_based_project
+<br>
+Clone the repository:
+<br>
+git clone https://github.com/Sheemafirdose/nlp_based_project<br>
 Navigate to the project directory:
-
-  cd nlp_based_project
+<br>
+cd nlp_based_project<br>
 Install the required dependencies:
-pip install -r requirements.txt
+<br>
+pip install -r requirements.txt<br>
 Run the app:
-streamlit run app.py
-Demo:
-Check out the live demo here.
-https://sheemafirdose-nlp-project.streamlit.app/
+<br>
+streamlit run app.py<br>
+Demo:<br>
+Check out the live demo here:<br>
+Live Demo<br>
+
